@@ -1,29 +1,29 @@
 <!DOCTYPE html>
-
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Gerador de Certidão de Uso e Ocupação do Solo (Editável)</title>
-<!-- Tailwind CSS for styling -->
-<script src="https://cdn.tailwindcss.com"></script>
-<!-- Papa Parse for CSV parsing -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-<!-- Google Fonts: Inter for UI -->
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet"/>
-<style>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Gerador de Certidão de Uso e Ocupação do Solo (Editável)</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Papa Parse for CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <!-- Google Fonts: Inter for UI -->
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet"/>
+    <style>
         /* Custom styles for the application */
         body {
             font-family: 'Inter', sans-serif;
         }
         #certificate-output {
-            font-family: 'Times New Roman', Times, serif; /* FONT CHANGED HERE */
+            font-family: 'Times New Roman', Times, serif; /* Font for the certificate */
             box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
             position: relative; 
             overflow: hidden;
         }
+        /* Watermark for screen view */
         #certificate-output::before {
             content: '';
             position: absolute;
@@ -51,11 +51,11 @@
         @media print {
             @page {
                 size: A4;
-                margin: 1.5cm 1.5cm 2.5cm 1.5cm; /* Top, Right, BOTTOM, Left - Increased bottom margin */
+                margin: 1.5cm 1.5cm 2.5cm 1.5cm; /* Top, Right, BOTTOM, Left - Increased bottom margin for footer */
                 @bottom-center {
                     content: "PAÇO MUNICIPAL - PALÁCIO INDEPENDÊNCIA | Rua Antônio Carlos, 301 - Centro | Valinhos - SP | CEP 13270-005\A Fone: (19) 3849.8000 | site: www.valinhos.sp.gov.br\A\A Página " counter(page) " de " counter(pages);
                     white-space: pre;
-                    font-family: 'Times New Roman', Times, serif; /* FONT CHANGED HERE */
+                    font-family: 'Times New Roman', Times, serif;
                     font-size: 8pt;
                     color: #666;
                 }
@@ -73,7 +73,7 @@
                 display: block !important; 
                 box-shadow: none !important; 
                 border: none !important; 
-                font-size: 11pt !important; /* ADJUSTED FONT SIZE BACK TO 11pt */
+                font-size: 11pt !important;
                 width: 100% !important; 
                 color: black !important;
             }
@@ -87,23 +87,22 @@
                 border-collapse: collapse;
             }
             #certificate-table thead {
-                display: table-header-group; /* CRITICAL for repeating headers */
+                display: table-header-group; /* CRITICAL for repeating headers across pages */
             }
             #certificate-table thead td {
-                 padding-bottom: 1rem !important; /* Reduced spacing */
-                 /* Ensure header content is not affected by other styles */
-                 color: black !important;
+                padding-bottom: 1rem !important;
+                color: black !important;
             }
             #print-header, #print-header * {
                 color: black !important;
                 text-align: center !important;
             }
             #print-header h2 {
-                font-size: 16pt !important; /* Adjusted header font size for balance */
+                font-size: 16pt !important;
                 font-weight: bold !important;
             }
              #print-header p {
-                font-size: 16pt !important; /* Adjusted header font size for balance */
+                font-size: 16pt !important;
                 font-weight: bold !important;
             }
             #print-header img {
@@ -114,17 +113,17 @@
 
             /* --- Body Print Fixes --- */
             #print-body { 
-                text-align: justify !important; /* Justify all content within the body */
+                text-align: justify !important;
             }
             #print-body[contenteditable="true"] { 
                 outline: none !important; 
             }
             .certificate-content p {
                 text-indent: 4rem !important;
-                line-height: 1.4 !important; /* Adjusted line spacing for print */
+                line-height: 1.4 !important;
             }
 
-            /* --- Watermark Fix --- */
+            /* --- Watermark for Print --- */
             .print-watermark {
                 display: block !important;
                 position: fixed;
@@ -139,6 +138,7 @@
                 opacity: 0.5;
                 z-index: -1000;
             }
+            /* Avoid breaking signature block across pages */
             .signature-block, footer { page-break-inside: avoid !important; }
         }
         
@@ -146,205 +146,217 @@
         .print-watermark {
             display: none;
         }
-</style>
+    </style>
 </head>
 <body class="bg-gray-100 text-gray-800">
-<div class="print-watermark"></div>
-<div class="container mx-auto p-4 md:p-8">
-<header class="text-center mb-8 no-print">
-<h1 class="text-3xl md:text-4xl font-bold text-gray-700">Gerador de Certidão (Editável)</h1>
-<p class="text-gray-500 mt-2">Preencha o formulário para gerar. <strong class="text-blue-600">O texto da certidão pode ser editado diretamente.</strong></p>
-</header>
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-<!-- Form Section -->
-<div class="bg-white p-6 rounded-lg shadow-md no-print">
-<form class="space-y-4" id="certificate-form">
-<h2 class="text-2xl font-bold border-b pb-2 mb-4">Dados da Certidão</h2>
-<!-- Search, Certificate No, and Protocol -->
-<div>
-<label class="block text-sm font-medium text-gray-700" for="inscricao-imobiliaria">Inscrição Imobiliária (IM)</label>
-<input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" id="inscricao-imobiliaria" placeholder="Digite a IM e pressione Enter" type="text"/>
-<div class="text-sm h-5 mt-1 font-medium" id="search-status"></div>
-</div>
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-<div>
-<label class="block text-sm font-medium text-gray-700" for="certidao-numero">Nº da Certidão</label>
-<input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" id="certidao-numero" type="text" value="0"/>
-</div>
-<div>
-<label class="block text-sm font-medium text-gray-700" for="protocolo-numero">Nº do Protocolo</label>
-<input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" id="protocolo-numero" type="text" value="0"/>
-</div>
-</div>
-<!-- Requester Details -->
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-<div>
-<label class="block text-sm font-medium text-gray-700" for="requerente-nome">Nome do Requerente</label>
-<input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" id="requerente-nome" type="text" value="0"/>
-</div>
-<div>
-<label class="block text-sm font-medium text-gray-700" for="requerente-cpf-cnpj">CPF/CNPJ do Requerente</label>
-<input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" id="requerente-cpf-cnpj" type="text" value="0"/>
-</div>
-</div>
-<!-- Property Details Section (populated by search) -->
-<div class="space-y-4 border-t pt-4 mt-4">
-<h3 class="text-lg font-semibold text-gray-600">Dados do Imóvel (Editável)</h3>
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-<div>
-<label class="block text-sm font-medium text-gray-700" for="logradouro">Logradouro</label>
-<input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="logradouro" type="text"/>
-</div>
-<div>
-<label class="block text-sm font-medium text-gray-700" for="numero">Número</label>
-<input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="numero" type="text"/>
-</div>
-</div>
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-<div>
-<label class="block text-sm font-medium text-gray-700" for="lote">Lote</label>
-<input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="lote" type="text"/>
-</div>
-<div>
-<label class="block text-sm font-medium text-gray-700" for="quadra">Quadra</label>
-<input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="quadra" type="text"/>
-</div>
-</div>
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-<div>
-<label class="block text-sm font-medium text-gray-700" for="loteamento">Loteamento</label>
-<input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="loteamento" type="text"/>
-</div>
-<div>
-<label class="block text-sm font-medium text-gray-700" for="bairro">Bairro</label>
-<input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="bairro" type="text"/>
-</div>
-</div>
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-<div>
-<label class="block text-sm font-medium text-gray-700" for="matricula">Matrícula</label>
-<input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="matricula" type="text"/>
-</div>
-<div>
-<label class="block text-sm font-medium text-gray-700" for="zona-zc">Zona (ZC)</label>
-<input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="zona-zc" type="text"/>
-</div>
-</div>
-<div>
-<label class="block text-sm font-medium text-gray-700" for="desc-zona">Descrição da Zona</label>
-<input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="desc-zona" type="text"/>
-</div>
-<div>
-<label class="block text-sm font-medium text-gray-700" for="atividades-permitidas">Atividades Permitidas (Automático)</label>
-<input class="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm" id="atividades-permitidas" type="text" readonly/>
-</div>
-</div>
-<!-- Activity Details -->
-<div class="space-y-4 border-t pt-4 mt-4">
-<div class="flex justify-between items-center">
-<h3 class="text-lg font-semibold text-gray-600">Dados da Atividade</h3>
-<button class="px-3 py-1 bg-green-500 text-white text-sm font-semibold rounded-lg shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75" id="add-cnae-button" type="button">+ Adicionar CNAE</button>
-</div>
-<div class="space-y-3" id="cnae-fields-container">
-<!-- CNAE fields will be dynamically inserted here -->
-</div>
-</div>
-<!-- Issuer Details -->
-<div class="space-y-4 border-t pt-4 mt-4">
-<h3 class="text-lg font-semibold text-gray-600">Dados do Emissor</h3>
-<div>
-<label class="block text-sm font-medium text-gray-700" for="emissor-nome">Nome do Emissor</label>
-<input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="emissor-nome" type="text" value="Victor Guilherme Montagnoli"/>
-</div>
-<div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-<div>
-<label class="block text-sm font-medium text-gray-700" for="emissor-cargo">Cargo</label>
-<input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="emissor-cargo" type="text" value="Agente Administrativo II"/>
-</div>
-<div>
-<label class="block text-sm font-medium text-gray-700" for="emissor-lotacao">Lotação</label>
-<input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="emissor-lotacao" type="text" value="Divisão de Viabilidade e Vistorias - SF"/>
-</div>
-</div>
-<div>
-<label class="block text-sm font-medium text-gray-700" for="local-data">Local e Data</label>
-<input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="local-data" type="text"/>
-</div>
-</div>
-<div class="border-t pt-4 mt-4 flex justify-end space-x-3">
-<button class="px-4 py-2 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600" id="reset-button" type="button">Limpar</button>
-<button class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700" id="print-button" type="button">Imprimir Certidão</button>
-</div>
-</form>
-</div>
-<!-- Certificate Display -->
-<div id="certificate-output">
-    <table id="certificate-table">
-        <thead>
-            <tr>
-                <td>
-                    <div id="print-header" class="text-center">
-                        <img alt="Logo da Prefeitura de Valinhos" src="https://raw.githubusercontent.com/Hadler-Stevanatto/CERTIDAO/main/logo%20e%20PMV.png" style="height: 60px; margin: 0 auto;"/>
-                        <h2 class="text-xl font-bold uppercase tracking-wider mt-4">Certidão de Uso e Ocupação do Solo</h2>
-                        <p class="text-lg font-bold mt-2">N° <span id="certidao-numero-out">0</span> - <span id="certidao-sigla-out">SF/DRF/DVV</span></p>
+    <!-- This div is used to display the watermark only when printing -->
+    <div class="print-watermark"></div>
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8 no-print">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-700">Gerador de Certidão (Editável)</h1>
+            <p class="text-gray-500 mt-2">Preencha o formulário para gerar. <strong class="text-blue-600">O texto da certidão pode ser editado diretamente.</strong></p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Form Section -->
+            <div class="bg-white p-6 rounded-lg shadow-md no-print">
+                <form class="space-y-4" id="certificate-form">
+                    <h2 class="text-2xl font-bold border-b pb-2 mb-4">Dados da Certidão</h2>
+                    
+                    <!-- Search, Certificate No, and Protocol -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700" for="inscricao-imobiliaria">Inscrição Imobiliária (IM)</label>
+                        <input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" id="inscricao-imobiliaria" placeholder="Digite a IM e pressione Enter" type="text"/>
+                        <div class="text-sm h-5 mt-1 font-medium" id="search-status"></div>
                     </div>
-                </td>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>
-                    <div id="print-body" contenteditable="true">
-                        <div class="relative z-10 print-body-content p-8 md:p-12 lg:p-16">
-                            <main class="text-justify text-base leading-relaxed certificate-content flex-grow">
-                                <p>
-                                    A Divisão de Viabilidade e Vistorias do Departamento de Receitas e Fiscalização, da
-                                    Secretaria da Fazenda, a pedido de <strong id="requerente-nome-out">0</strong>, inscrito(a) no CPF/CNPJ sob o nº <strong id="requerente-cpf-cnpj-out">0</strong>, conforme elementos do
-                                    protocolo <strong id="protocolo-numero-out">0</strong>, CERTIFICA para os devidos fins que:
-                                </p>
-                                <p>
-                                    O imóvel com inscrição imobiliária <strong id="im-out">...</strong>, 
-                                    situado na Rua/Av. <strong id="logradouro-out">...</strong>, 
-                                    Nº <strong id="numero-out">...</strong>, 
-                                    Lote: <strong id="lote-out">...</strong>, 
-                                    Quadra: <strong id="quadra-out">...</strong>, 
-                                    Loteamento: <strong id="loteamento-out">...</strong>, 
-                                    Bairro: <strong id="bairro-out">...</strong>, 
-                                    Matrícula: <strong id="matricula-out">...</strong>, 
-                                    está inserido na <strong>ZONA URBANA</strong> do Município, 
-                                    integrando a <strong id="zona-zc-out">...</strong> - <strong id="desc-zona-out">...</strong>, 
-                                    conforme parâmetros da Lei Municipal nº 6574 de 29 de dezembro de 2023.
-                                </p>
-                                <p>
-                                    Para o zoneamento local são permitidas as atividades classificadas como <strong id="atividades-permitidas-out">...</strong>, conforme Anexo III da Lei Municipal nº 6574 de 29 de dezembro de 2023.
-                                </p>
-                                <div id="cnae-compatibility-paragraphs">
-                                    <!-- CNAE paragraphs will be dynamically inserted here -->
-                                </div>
-                                <p>
-                                    Sob os aspectos construtivos, ambientais, licenciamento e de liberação para instalação e
-                                    funcionamento, deverão ser respeitadas as legislações vigentes no âmbito federal,
-                                    estadual e municipal. A compatibilidade indicada é vinculada ao estabelecimento das
-                                    atividades no imóvel indicado.
-                                </p>
-                            </main>
-                            <footer class="text-right mt-12 mb-16">
-                                <p id="local-data-out">Valinhos, 14 de agosto de 2025</p>
-                            </footer>
-                            <div class="text-left signature-block">
-                                <p class="italic" id="emissor-nome-out">Victor Guilherme Montagnoli</p>
-                                <p class="text-sm italic" id="emissor-cargo-out">Agente Administrativo II</p>
-                                <p class="text-sm italic" id="emissor-lotacao-out">Divisão de Viabilidade e Vistorias - SF</p>
-                            </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700" for="certidao-numero">Nº da Certidão</label>
+                            <input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" id="certidao-numero" type="text" value="0"/>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700" for="protocolo-numero">Nº do Protocolo</label>
+                            <input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" id="protocolo-numero" type="text" value="0"/>
                         </div>
                     </div>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-</div>
-</div>
-</div>
+
+                    <!-- Requester Details -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700" for="requerente-nome">Nome do Requerente</label>
+                            <input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" id="requerente-nome" type="text" value="0"/>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700" for="requerente-cpf-cnpj">CPF/CNPJ do Requerente</label>
+                            <input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" id="requerente-cpf-cnpj" type="text" value="0"/>
+                        </div>
+                    </div>
+
+                    <!-- Property Details Section (populated by search) -->
+                    <div class="space-y-4 border-t pt-4 mt-4">
+                        <h3 class="text-lg font-semibold text-gray-600">Dados do Imóvel (Editável)</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700" for="logradouro">Logradouro</label>
+                                <input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="logradouro" type="text"/>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700" for="numero">Número</label>
+                                <input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="numero" type="text"/>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700" for="lote">Lote</label>
+                                <input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="lote" type="text"/>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700" for="quadra">Quadra</label>
+                                <input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="quadra" type="text"/>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700" for="loteamento">Loteamento</label>
+                                <input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="loteamento" type="text"/>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700" for="bairro">Bairro</label>
+                                <input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="bairro" type="text"/>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700" for="matricula">Matrícula</label>
+                                <input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="matricula" type="text"/>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700" for="zona-zc">Zona (ZC)</label>
+                                <input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="zona-zc" type="text"/>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700" for="desc-zona">Descrição da Zona</label>
+                            <input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="desc-zona" type="text"/>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700" for="atividades-permitidas">Atividades Permitidas (Automático)</label>
+                            <input class="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md shadow-sm" id="atividades-permitidas" type="text" readonly/>
+                        </div>
+                    </div>
+
+                    <!-- Activity Details -->
+                    <div class="space-y-4 border-t pt-4 mt-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-lg font-semibold text-gray-600">Dados da Atividade</h3>
+                            <button class="px-3 py-1 bg-green-500 text-white text-sm font-semibold rounded-lg shadow-md hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-400 focus:ring-opacity-75" id="add-cnae-button" type="button">+ Adicionar CNAE</button>
+                        </div>
+                        <div class="space-y-3" id="cnae-fields-container">
+                            <!-- CNAE fields will be dynamically inserted here -->
+                        </div>
+                    </div>
+
+                    <!-- Issuer Details -->
+                    <div class="space-y-4 border-t pt-4 mt-4">
+                        <h3 class="text-lg font-semibold text-gray-600">Dados do Emissor</h3>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700" for="emissor-nome">Nome do Emissor</label>
+                            <input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="emissor-nome" type="text" value="Victor Guilherme Montagnoli"/>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700" for="emissor-cargo">Cargo</label>
+                                <input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="emissor-cargo" type="text" value="Agente Administrativo II"/>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700" for="emissor-lotacao">Lotação</label>
+                                <input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="emissor-lotacao" type="text" value="Divisão de Viabilidade e Vistorias - SF"/>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700" for="local-data">Local e Data</label>
+                            <input class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" id="local-data" type="text"/>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="border-t pt-4 mt-4 flex justify-end space-x-3">
+                        <button class="px-4 py-2 bg-gray-500 text-white font-semibold rounded-lg shadow-md hover:bg-gray-600" id="reset-button" type="button">Limpar</button>
+                        <button class="px-4 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700" id="print-button" type="button">Imprimir Certidão</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Certificate Display -->
+            <div id="certificate-output">
+                <table id="certificate-table">
+                    <thead>
+                        <tr>
+                            <td>
+                                <div id="print-header" class="text-center">
+                                    <img alt="Logo da Prefeitura de Valinhos" src="https://raw.githubusercontent.com/Hadler-Stevanatto/CERTIDAO/main/logo%20e%20PMV.png" style="height: 60px; margin: 0 auto;"/>
+                                    <h2 class="text-xl font-bold uppercase tracking-wider mt-4">Certidão de Uso e Ocupação do Solo</h2>
+                                    <p class="text-lg font-bold mt-2">N° <span id="certidao-numero-out">0</span> - <span id="certidao-sigla-out">SF/DRF/DVV</span></p>
+                                </div>
+                            </td>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <div id="print-body" contenteditable="true">
+                                    <div class="relative z-10 print-body-content p-8 md:p-12 lg:p-16">
+                                        <main class="text-justify text-base leading-relaxed certificate-content flex-grow">
+                                            <p>
+                                                A Divisão de Viabilidade e Vistorias do Departamento de Receitas e Fiscalização, da
+                                                Secretaria da Fazenda, a pedido de <strong id="requerente-nome-out">0</strong>, inscrito(a) no CPF/CNPJ sob o nº <strong id="requerente-cpf-cnpj-out">0</strong>, conforme elementos do
+                                                protocolo <strong id="protocolo-numero-out">0</strong>, CERTIFICA para os devidos fins que:
+                                            </p>
+                                            <p>
+                                                O imóvel com inscrição imobiliária <strong id="im-out">...</strong>, 
+                                                situado na Rua/Av. <strong id="logradouro-out">...</strong>, 
+                                                Nº <strong id="numero-out">...</strong>, 
+                                                Lote: <strong id="lote-out">...</strong>, 
+                                                Quadra: <strong id="quadra-out">...</strong>, 
+                                                Loteamento: <strong id="loteamento-out">...</strong>, 
+                                                Bairro: <strong id="bairro-out">...</strong>, 
+                                                Matrícula: <strong id="matricula-out">...</strong>, 
+                                                está inserido na <strong>ZONA URBANA</strong> do Município, 
+                                                integrando a <strong id="zona-zc-out">...</strong> - <strong id="desc-zona-out">...</strong>, 
+                                                conforme parâmetros da Lei Municipal nº 6574 de 29 de dezembro de 2023.
+                                            </p>
+                                            <p>
+                                                Para o zoneamento local são permitidas as atividades classificadas como <strong id="atividades-permitidas-out">...</strong>, conforme Anexo III da Lei Municipal nº 6574 de 29 de dezembro de 2023.
+                                            </p>
+                                            <div id="cnae-compatibility-paragraphs">
+                                                <!-- CNAE paragraphs will be dynamically inserted here -->
+                                            </div>
+                                            <p>
+                                                Sob os aspectos construtivos, ambientais, licenciamento e de liberação para instalação e
+                                                funcionamento, deverão ser respeitadas as legislações vigentes no âmbito federal,
+                                                estadual e municipal. A compatibilidade indicada é vinculada ao estabelecimento das
+                                                atividades no imóvel indicado.
+                                            </p>
+                                        </main>
+                                        <footer class="text-right mt-4 mb-4">
+                                            <p id="local-data-out">Valinhos, 15 de agosto de 2025</p>
+                                        </footer>
+                                        <div class="text-left signature-block">
+                                            <p class="italic" id="emissor-nome-out">Victor Guilherme Montagnoli</p>
+                                            <p class="text-sm italic" id="emissor-cargo-out">Agente Administrativo II</p>
+                                            <p class="text-sm italic" id="emissor-lotacao-out">Divisão de Viabilidade e Vistorias - SF</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
@@ -354,6 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const propertyCsvUrl = 'https://raw.githubusercontent.com/Hadler-Stevanatto/CERTIDAO/main/imobiliario_6574.2023.csv';
     const cnaeCsvUrl = 'https://raw.githubusercontent.com/Hadler-Stevanatto/CERTIDAO/main/CNAE_6574.2023.csv';
 
+    // Load both CSV files concurrently
     Promise.all([
         new Promise((resolve, reject) => Papa.parse(propertyCsvUrl, { download: true, header: true, delimiter: ";", skipEmptyLines: true, complete: resolve, error: reject })),
         new Promise((resolve, reject) => Papa.parse(cnaeCsvUrl, { download: true, header: true, delimiter: ";", skipEmptyLines: true, complete: resolve, error: reject }))
@@ -391,7 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- CORE UPDATE LOGIC ---
     const updateCertificate = () => {
-        // This function now only updates specific elements by ID, preserving surrounding text.
+        // This function updates specific elements by ID, preserving surrounding text.
         document.getElementById('certidao-numero-out').textContent = document.getElementById('certidao-numero').value;
         document.getElementById('requerente-nome-out').textContent = document.getElementById('requerente-nome').value;
         document.getElementById('requerente-cpf-cnpj-out').textContent = formatDocumentNumber(document.getElementById('requerente-cpf-cnpj').value);
@@ -419,7 +432,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const updateCnaeCompatibilityParagraphs = () => {
         const container = document.getElementById('cnae-compatibility-paragraphs');
-        container.innerHTML = ''; // Clear and rebuild
+        container.innerHTML = ''; // Clear and rebuild paragraphs
         document.querySelectorAll('.cnae-entry').forEach(field => {
             const cnaeInput = field.querySelector('.cnae-code-input');
             const compatibilityInput = field.querySelector('.cnae-compatibility-input');
@@ -445,7 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const cnaeValue = (cnaeInput.value || '').replace(/\D/g, '');
         const cnaeData = cnaeDatabase.find(row => row.CNAE && row.CNAE.trim() === cnaeValue);
 
-        let result = "INCOMPATÍVEL"; // Default
+        let result = "INCOMPATÍVEL"; // Default value
         if (property && cnaeData) {
             const grupoMap = { 'A0': 0, 'A1': 1, 'A2': 2, 'A3': 3, 'A4': 4, 'A5': 5 };
             const grupoAtvValue = grupoMap[(property.GRUPO_ATV || '').trim()];
@@ -469,7 +482,7 @@ document.addEventListener('DOMContentLoaded', () => {
             searchStatusEl.textContent = 'IM encontrada com sucesso!';
             searchStatusEl.className = 'text-sm h-5 mt-1 font-medium text-green-600';
             
-            // Populate form fields
+            // Populate form fields with data from the found property
             document.getElementById('logradouro').value = foundProperty.LOGRADOURO || '';
             document.getElementById('numero').value = foundProperty.NUMERO || '';
             document.getElementById('lote').value = foundProperty.LOTE || '';
@@ -485,8 +498,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             searchStatusEl.textContent = 'IM não encontrada.';
             searchStatusEl.className = 'text-sm h-5 mt-1 font-medium text-red-600';
+            // Clear fields if property is not found
             ['logradouro', 'numero', 'lote', 'quadra', 'loteamento', 'bairro', 'matricula', 'zona-zc', 'desc-zona', 'atividades-permitidas'].forEach(id => document.getElementById(id).value = '');
         }
+        // Re-validate all CNAE fields after property data changes
         document.querySelectorAll('.cnae-entry').forEach(field => {
             validateSingleCnae(field.querySelector('.cnae-code-input'), field.querySelector('.cnae-compatibility-input'));
         });
@@ -514,7 +529,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- EVENT LISTENERS ---
     document.getElementById('inscricao-imobiliaria').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-            e.preventDefault();
+            e.preventDefault(); // Prevent form submission
             findPropertyData();
         }
     });
@@ -535,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    form.addEventListener('input', updateCertificate); // Update on any form change
+    form.addEventListener('input', updateCertificate); // Update certificate preview on any form change
 
     document.getElementById('print-button').addEventListener('click', () => window.print());
     
@@ -550,14 +565,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INITIAL SETUP ---
     const setCurrentDate = () => {
-        const today = new Date();
-        const options = { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Sao_Paulo' };
-        document.getElementById('local-data').value = `Valinhos, ${today.toLocaleDateString('pt-BR', options)}`;
+        // Set a fixed date based on the provided context for consistency.
+        document.getElementById('local-data').value = 'Valinhos, 15 de agosto de 2025';
     };
 
-    addCnaeField();
-    setCurrentDate();
-    updateCertificate();
+    addCnaeField(); // Add one initial CNAE field
+    setCurrentDate(); // Set the initial date
+    updateCertificate(); // Populate the certificate with initial values
 });
 </script>
 </body>
