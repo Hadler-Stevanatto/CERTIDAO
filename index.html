@@ -460,14 +460,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let result = "INCOMPATÍVEL"; // Default value
         if (property && cnaeData) {
-            const grupoMap = { 'A0': 0, 'A1': 1, 'A2': 2, 'A3': 3, 'A4': 4, 'A5': 5 };
-            const grupoAtvValue = grupoMap[(property.GRUPO_ATV || '').trim()];
             const incomodidadeValue = parseInt((cnaeData.INCOMODIDADE || '').trim(), 10);
+            
+            // --- CORREÇÃO APLICADA AQUI ---
+            // Lista de zonas onde a atividade uR (incomodidade 0) é permitida.
+            const allowedZonesForUR = ['ZR1', 'ZRRM1', 'ZRRM2', 'ZM', 'ZEIS1', 'ZEIS2', 'MDO1', 'MDO2'];
+            const propertyZone = (property.ZONA_ZC || '').trim();
 
-            if (incomodidadeValue === 5) {
-                result = "DEPENDENTE DE ANALISE";
-            } else if (!isNaN(incomodidadeValue) && incomodidadeValue <= grupoAtvValue) {
-                result = "COMPATÍVEL";
+            // Regra específica: Se a atividade for uR (0) e a zona NÃO estiver na lista, é incompatível.
+            if (incomodidadeValue === 0 && !allowedZonesForUR.includes(propertyZone)) {
+                result = "INCOMPATÍVEL";
+            } else {
+                // Se a regra acima não se aplicar, segue a lógica original.
+                const grupoMap = { 'A0': 0, 'A1': 1, 'A2': 2, 'A3': 3, 'A4': 4, 'A5': 5 };
+                const grupoAtvValue = grupoMap[(property.GRUPO_ATV || '').trim()];
+
+                if (incomodidadeValue === 5) {
+                    result = "DEPENDENTE DE ANALISE";
+                } else if (!isNaN(incomodidadeValue) && incomodidadeValue <= grupoAtvValue) {
+                    result = "COMPATÍVEL";
+                }
             }
         }
         compatibilityInput.value = result;
@@ -482,7 +494,6 @@ document.addEventListener('DOMContentLoaded', () => {
             searchStatusEl.textContent = 'IM encontrada com sucesso!';
             searchStatusEl.className = 'text-sm h-5 mt-1 font-medium text-green-600';
             
-            // Populate form fields with data from the found property
             document.getElementById('logradouro').value = foundProperty.LOGRADOURO || '';
             document.getElementById('numero').value = foundProperty.NUMERO || '';
             document.getElementById('lote').value = foundProperty.LOTE || '';
@@ -493,15 +504,50 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('zona-zc').value = foundProperty.ZONA_ZC || '';
             document.getElementById('desc-zona').value = foundProperty.DESC_ZONA || '';
             
-            const grupoMap = { 'A0': 'uR', 'A1': 'uR e nR1', 'A2': 'uR, nR1 e nR2', 'A3': 'uR, nR1, nR2 e nR3', 'A4': 'uR, nR1, nR2, nR3 e nR4' };
-            document.getElementById('atividades-permitidas').value = grupoMap[(foundProperty.GRUPO_ATV || '').trim()] || 'Grupo não encontrado';
+            // --- CORREÇÃO APLICADA AQUI ---
+            // Lógica para construir a string de atividades permitidas baseada na zona.
+            const propertyZone = (foundProperty.ZONA_ZC || '').trim();
+            const allowedZonesForUR = ['ZR1', 'ZRRM1', 'ZRRM2', 'ZM', 'ZEIS1', 'ZEIS2', 'MDO1', 'MDO2'];
+            const isUrAllowed = allowedZonesForUR.includes(propertyZone);
+            const grupoAtv = (foundProperty.GRUPO_ATV || '').trim();
+
+            let activities = [];
+            if (isUrAllowed && ['A0', 'A1', 'A2', 'A3', 'A4'].includes(grupoAtv)) {
+                activities.push('uR');
+            }
+            if (['A1', 'A2', 'A3', 'A4'].includes(grupoAtv)) {
+                activities.push('nR1');
+            }
+            if (['A2', 'A3', 'A4'].includes(grupoAtv)) {
+                activities.push('nR2');
+            }
+            if (['A3', 'A4'].includes(grupoAtv)) {
+                activities.push('nR3');
+            }
+            if (['A4'].includes(grupoAtv)) {
+                activities.push('nR4');
+            }
+            
+            let permittedText = 'Grupo não encontrado';
+            if (activities.length > 0) {
+                 if (activities.length === 1) {
+                    permittedText = activities[0];
+                } else {
+                    const last = activities.pop();
+                    permittedText = activities.join(', ') + ' e ' + last;
+                }
+            } else if (grupoAtv) { // Se existe grupo mas nenhuma atividade foi adicionada
+                permittedText = 'Nenhuma atividade permitida para esta zona';
+            }
+            
+            document.getElementById('atividades-permitidas').value = permittedText;
+
         } else {
             searchStatusEl.textContent = 'IM não encontrada.';
             searchStatusEl.className = 'text-sm h-5 mt-1 font-medium text-red-600';
-            // Clear fields if property is not found
             ['logradouro', 'numero', 'lote', 'quadra', 'loteamento', 'bairro', 'matricula', 'zona-zc', 'desc-zona', 'atividades-permitidas'].forEach(id => document.getElementById(id).value = '');
         }
-        // Re-validate all CNAE fields after property data changes
+        
         document.querySelectorAll('.cnae-entry').forEach(field => {
             validateSingleCnae(field.querySelector('.cnae-code-input'), field.querySelector('.cnae-compatibility-input'));
         });
@@ -529,7 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- EVENT LISTENERS ---
     document.getElementById('inscricao-imobiliaria').addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
-            e.preventDefault(); // Prevent form submission
+            e.preventDefault(); 
             findPropertyData();
         }
     });
@@ -550,7 +596,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    form.addEventListener('input', updateCertificate); // Update certificate preview on any form change
+    form.addEventListener('input', updateCertificate);
 
     document.getElementById('print-button').addEventListener('click', () => window.print());
     
@@ -565,13 +611,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INITIAL SETUP ---
     const setCurrentDate = () => {
-        // Set a fixed date based on the provided context for consistency.
         document.getElementById('local-data').value = 'Valinhos, 15 de agosto de 2025';
     };
 
-    addCnaeField(); // Add one initial CNAE field
-    setCurrentDate(); // Set the initial date
-    updateCertificate(); // Populate the certificate with initial values
+    addCnaeField(); 
+    setCurrentDate(); 
+    updateCertificate(); 
 });
 </script>
 </body>
