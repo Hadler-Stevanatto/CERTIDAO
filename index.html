@@ -464,7 +464,11 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // --- CORREÇÃO APLICADA AQUI ---
             // Lista de zonas onde a atividade uR (incomodidade 0) é permitida.
-            const allowedZonesForUR = ['ZR1', 'ZRRM1', 'ZRRM2', 'ZM', 'ZEIS1', 'ZEIS2', 'MDO1', 'MDO2'];
+            const allowedZonesForUR = [
+                'ZR1', 'MDO1', 'MDO2', '0_ZC1', '0_ZC1.5', '0_ZC2', '0_ZC3', 'ZEIS1', 
+                'ZEIS1_ZC2', 'ZEIS2', 'ZM', 'ZM_ZC1', 'ZM_ZC1.5', 'ZM_ZC2', 'ZM_ZC3', 
+                'ZRRM1', 'ZRRM1_ZC1', 'ZRRM1_ZC3', 'ZRRM1_ZC1.5', 'ZRRM1_ZC2', 'ZRRM2', 'ZRRM2_ZC1'
+            ];
             const propertyZone = (property.ZONA_ZC || '').trim();
 
             // Regra específica: Se a atividade for uR (0) e a zona NÃO estiver na lista, é incompatível.
@@ -507,7 +511,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // --- CORREÇÃO APLICADA AQUI ---
             // Lógica para construir a string de atividades permitidas baseada na zona.
             const propertyZone = (foundProperty.ZONA_ZC || '').trim();
-            const allowedZonesForUR = ['ZR1', 'ZRRM1', 'ZRRM2', 'ZM', 'ZEIS1', 'ZEIS2', 'MDO1', 'MDO2'];
+            const allowedZonesForUR = [
+                'ZR1', 'MDO1', 'MDO2', '0_ZC1', '0_ZC1.5', '0_ZC2', '0_ZC3', 'ZEIS1', 
+                'ZEIS1_ZC2', 'ZEIS2', 'ZM', 'ZM_ZC1', 'ZM_ZC1.5', 'ZM_ZC2', 'ZM_ZC3', 
+                'ZRRM1', 'ZRRM1_ZC1', 'ZRRM1_ZC3', 'ZRRM1_ZC1.5', 'ZRRM1_ZC2', 'ZRRM2', 'ZRRM2_ZC1'
+            ];
             const isUrAllowed = allowedZonesForUR.includes(propertyZone);
             const grupoAtv = (foundProperty.GRUPO_ATV || '').trim();
 
